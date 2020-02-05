@@ -8,8 +8,8 @@ library(cowplot)       # For pretty graphs
 library(pglm)          # For generalised panel models
 
 #### Extract outcome variable indicators ####
-sr_ids <- c(90631, # Child development
-            90632) # Child developmet - free school meals
+sr_ids <- c(90631, # School readiness
+            90632) # School readiness - free school meals
 
 outcomes <- fingertips_data(IndicatorID = sr_ids) 
 
