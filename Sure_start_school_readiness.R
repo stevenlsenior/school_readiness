@@ -11,7 +11,8 @@ library(pglm)          # For generalised panel models
 sr_ids <- c(90631, # School readiness
             90632) # School readiness - free school meals
 
-outcomes <- fingertips_data(IndicatorID = sr_ids) 
+outcomes <- fingertips_data(IndicatorID = sr_ids,
+                            AreaTypeID = 102) 
 
 outcomes <- outcomes %>%
   filter(AreaType == "County & UA (pre 4/19)",
@@ -38,11 +39,12 @@ names(outcomes)[5:8] <- c("n_sr",
 
 #### Extract predictor indicators 2012 - 2017 ####
 
-pred_inds_p <- c(10101) # % children in low income families (under 16s)  
+# % children in low income families (under 16s)  
 
-predsp <- fingertips_data(IndicatorID = pred_inds_p) 
+preds <- fingertips_data(IndicatorID = 10101,
+                         AreaTypeID = 102) 
 
-predsp <- predsp %>%
+preds <- preds %>%
   filter(AreaType == "County & UA (pre 4/19)",
          Sex == "Persons") %>%
   filter(!(IndicatorID == 92313 & Age != "16-64 yrs")) %>%
@@ -59,11 +61,11 @@ predsp <- predsp %>%
 
 #### Merge outcome data with other PHE indicator data ####
 
-sr <- merge(outcomes, predsp, 
+sr <- merge(outcomes, preds, 
             by = c("AreaName", "AreaCode", "ParentName", "Timeperiod"))
 
 # Clear up worksspace
-rm(outcomes, predsp)
+rm(outcomes, preds)
 
 ##### Download spending data from Gov.uk website ####
 
@@ -98,6 +100,7 @@ spend_1213 <- read_xls("la_spend_2012_13.xls",
                        skip = 4) %>%
   select(AreaCode = 1,
          tempcode = 2,
+         education = 4,
          sure_start = 6,
          lac = 7,
          other_svcs = 8,
@@ -108,7 +111,11 @@ spend_1213 <- read_xls("la_spend_2012_13.xls",
          cap_ex = 13,
          spend_total = 14) %>%
   filter(!is.na(AreaCode)) %>%
-  mutate(Timeperiod = 2012)
+  mutate(Timeperiod = 2012)%>%
+  mutate_at(vars(-AreaCode, -Timeperiod),
+            as.numeric) %>%
+  mutate(spend_total = spend_total - education) %>% # Strip out education spend from total (not included in later totals)
+  select(-education)
 
 # later years don't contain the standard area codes. Create a lookup
 tempcode_lookup <- spend_1213 %>% select(AreaCode, tempcode)
@@ -134,7 +141,9 @@ spend_1314 <- read_xlsx("la_spend_2013_14.xls",
          !is.na(tempcode)) %>%
   mutate(Timeperiod = 2013) %>%
   merge(tempcode_lookup, by = "tempcode") %>%
-  select(-tempcode)
+  select(-tempcode) %>%
+  mutate_at(vars(-AreaCode, -Timeperiod),
+            as.numeric)
 
 spend_1415 <- read_xlsx("la_spend_2014_15.xlsx", 
                         sheet = 7, 
@@ -153,7 +162,9 @@ spend_1415 <- read_xlsx("la_spend_2014_15.xlsx",
          !is.na(tempcode)) %>%
   mutate(Timeperiod = 2014) %>%
   merge(tempcode_lookup, by = "tempcode") %>%
-  select(-tempcode)
+  select(-tempcode) %>%
+  mutate_at(vars(-AreaCode, -Timeperiod),
+            as.numeric)
 
 spend_1516 <- read_xlsx("la_spend_2015_16.xlsx", 
                         sheet = 7, 
@@ -172,7 +183,9 @@ spend_1516 <- read_xlsx("la_spend_2015_16.xlsx",
          !is.na(sure_start)) %>%
   mutate(Timeperiod = 2015) %>%
   merge(tempcode_lookup, by = "tempcode") %>%
-  select(-tempcode)
+  select(-tempcode) %>%
+  mutate_at(vars(-AreaCode, -Timeperiod),
+            as.numeric)
 
 spend_1617 <- read_xlsx("la_spend_2016_17.xlsx", 
                         sheet = 7, 
@@ -191,7 +204,9 @@ spend_1617 <- read_xlsx("la_spend_2016_17.xlsx",
          !is.na(sure_start)) %>%
   mutate(Timeperiod = 2016) %>%
   merge(tempcode_lookup, by = "tempcode") %>%
-  select(-tempcode)
+  select(-tempcode) %>%
+  mutate_at(vars(-AreaCode, -Timeperiod),
+            as.numeric)
 
 spend_1718 <- read_xlsx("la_spend_2017_18.xlsx", 
                         sheet = 8, 
@@ -210,7 +225,9 @@ spend_1718 <- read_xlsx("la_spend_2017_18.xlsx",
          !is.na(sure_start)) %>%
   mutate(Timeperiod = 2017) %>%
   merge(tempcode_lookup, by = "tempcode") %>%
-  select(-tempcode)
+  select(-tempcode) %>%
+  mutate_at(vars(-AreaCode, -Timeperiod),
+            as.numeric)
 
 # Merge spending data across years into single data frame
 
@@ -221,9 +238,7 @@ spend <- rbind(spend_1213,
                spend_1415,
                spend_1516,
                spend_1617,
-               spend_1718) %>%
-  mutate_at(vars(-AreaCode, -Timeperiod),
-            as.numeric)
+               spend_1718) 
 
 # Clear up workspace
 rm(spend_1213, spend_1314, spend_1415, spend_1516, spend_1617, spend_1718, spend_urls)
@@ -236,7 +251,8 @@ sr <- merge(sr, spend, by = c("AreaCode", "Timeperiod"),
 sr <- mutate(sr, non_ss_spend = spend_total - sure_start)
 
 # Get total population and under-18 population from Fingertips
-pop_data <- fingertips_data(92309)
+pop_data <- fingertips_data(92309,
+                            AreaTypeID = 102)
 
 pop_data <- pop_data %>%
   filter(AreaType == "County & UA (pre 4/19)",
