@@ -328,7 +328,9 @@ sr <- sr %>%
 #### Calculate Counts ####
 sr <- mutate(sr,
              sr_count = round(school_readiness * n_sr / 100),
-             sr_fsm_count = round(school_readiness_fsm * n_sr_fsm / 100))
+             sr_fsm_count = round(school_readiness_fsm * n_sr_fsm / 100),
+             sr_nonfsm_count = sr_count - sr_fsm_count,
+             n_sr_nonfsm = n_sr - n_fsm)
 
 #### Write panel data set to csv ####
 write.csv(sr, "school_readiness_panel.csv")
@@ -572,6 +574,18 @@ mf_sr_fsm <- pglm(sr_fsm_count ~ offset(log(n_sr_fsm)) +
                   effect = "individual",
                   family = poisson)
 
+# Fixed effects poisson model for school readiness - non-FSM children
+mf_sr_nonfsm <- pglm(sr_nonfsm_count ~ offset(log(n_sr_nonfsm)) +
+                    child_pov_u16 +
+                    log(sure_start+1) +
+                    log(non_ss_spend+1) +
+                    Timeperiod,
+                  data = panel,
+                  index = c("AreaName", "Timeperiod"),
+                  model = "within",
+                  effect = "individual",
+                  family = poisson)
+
 #### Collating regression coefficients ####
 coef_names <- rownames(summary(mf_sr_all)$estimate)
 
@@ -585,8 +599,14 @@ sr_fsm_coef <- as.data.frame(summary(mf_sr_fsm)$estimate) %>%
          coef_name = coef_names,
          population  = "FSM children")
 
+sr_nonfsm_coef <- as.data.frame(summary(mf_sr_nonfsm)$estimate) %>%
+  mutate(outcome = "school readiness",
+         coef_name = coef_names,
+         population  = "non-FSM children")
+
 coef_table <- rbind(sr_all_coef,
-                    sr_fsm_coef)
+                    sr_fsm_coef,
+                    sr_nonfsm_coef)
 
 names(coef_table)[1:4] <- c("coefficient", "se", "t", "p")
 
@@ -615,7 +635,8 @@ fig3_title = ggplot() +
         plot.subtitle = element_text(size = 10))
 
 fig3_body <- ggplot(aes(x = factor(population,
-                                   levels = c("FSM children",
+                                   levels = c("non-FSM children",
+                                              "FSM children",
                                               "all children")),
                         y = coefficient,
                         colour = !sig,
