@@ -144,7 +144,7 @@ fig3_body <- ggplot(aes(x = factor(population,
                         y = coefficient,
                         colour = !sig,
                         fill = !sig),
-                    data = filter(coef_table,
+                    data = filter(coef_table_s251,
                                   !grepl("Time", coef_name))) +
   geom_point() +
   geom_linerange(aes(ymin = ci_lower,
@@ -189,13 +189,14 @@ ggsave(filename = "figure3_s251.tiff",
 
 #### Table 2: regression coefficients ####
 
-table_2 <- coef_table %>%
+table_2 <- coef_table_s251 %>%
   select(coef_name, outcome, population, `95% CI`) %>%
   unite(model, outcome, population) %>%
   spread(key = model, value = `95% CI`) %>%
   select(Coefficient = coef_name,
          `School Readiness` = `school readiness_all children`,
-         `School Readiness (FSM)` = `school readiness_FSM children`) %>%
+         `School Readiness (FSM)` = `school readiness_FSM children`,
+         `School Readiness (non-FSM)` = `school readiness_non-FSM children`) %>%
   filter(!grepl("Timeperiod", Coefficient)) %>%
   arrange(desc(Coefficient))
 
