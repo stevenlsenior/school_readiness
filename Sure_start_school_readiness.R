@@ -204,7 +204,7 @@ fig2_body <- plot_grid(fig2a, fig2b,
 
 fig2_caption <- ggplot() +
   labs(caption = str_wrap("Trends in per child spending on all children's services and Sure Start, 2012-2016. Spending is £000s per child aged 0-17 years in constant 2012 pounds. Graph shows median (black line) and interquartile range (grey area).",
-                          width = 60)) +
+                          width = 80)) +
   theme_cowplot() + 
   theme(plot.caption = element_text(hjust = 0,
                                     size = 9))
@@ -212,7 +212,7 @@ fig2_caption <- ggplot() +
 fig2 <- plot_grid(fig2_title,
                   fig2_body,
                   fig2_caption,
-                  rel_heights = c(0.2, 1, 0.25),
+                  rel_heights = c(0.3, 1, 0.3),
                   ncol = 1)
 
 ggsave(filename = "figure2.tiff",
@@ -316,8 +316,12 @@ fig3_body <- ggplot(aes(x = factor(population,
                         y = coefficient,
                         colour = !sig,
                         fill = !sig),
-                    data = filter(coef_table,
-                                  !grepl("Time", coef_name))) +
+                    data = coef_table %>%
+                           filter(!grepl("Time", coef_name)) %>%
+                            mutate(coef_name = factor(coef_name,
+                                                      levels = c("Sure Start spend (log)",
+                                                                 "non-Sure Start spend (log)",
+                                                                  "Child poverty rate")))) +
   geom_point() +
   geom_linerange(aes(ymin = ci_lower,
                      ymax = ci_upper)) +
@@ -349,7 +353,7 @@ fig3 <- plot_grid(fig3_title,
                   fig3_body,
                   fig3_caption,
                   ncol = 1,
-                  rel_heights = c(0.25, 1, 0.3))
+                  rel_heights = c(0.35, 1, 0.5))
 
 ggsave(filename = "figure3.tiff",
        plot = fig3,
@@ -367,7 +371,8 @@ table_2 <- coef_table %>%
   spread(key = model, value = `95% CI`) %>%
   select(Coefficient = coef_name,
          `School Readiness` = `school readiness_all children`,
-         `School Readiness (FSM)` = `school readiness_FSM children`) %>%
+         `School Readiness (FSM)` = `school readiness_FSM children`,
+         `School Readiness (non-FSM)` = `school readiness_non-FSM children`) %>%
   filter(!grepl("Timeperiod", Coefficient)) %>%
   arrange(desc(Coefficient))
 
@@ -379,8 +384,4 @@ write.csv(table_2,
           file = "table2.csv",
           row.names = FALSE)
 
-#### Calculate elasticities for 10% change in Sure Start spending ####
-
-(1.1^coef(mf_sr_all)[3] - 1) * 100
-(1.1^coef(mf_sr_fsm)[3] - 1) * 100
 
