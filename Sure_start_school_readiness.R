@@ -127,9 +127,10 @@ fig1 <- ggplot(aes(x = year),
   labs(x = NULL,
        y = "%",
        title = "Figure 1: trends in school readiness",
-       subtitle = "English local authorities, 2012 - 2016",
-       caption = str_wrap("Trends in school readiness for all children (solid line) and children eligible for free school meals (dashed line) for 2012 - 2016. Graph shows median (lines) and interquartile range (grey area).",
-                          width = 90))
+       subtitle = "English local authorities, 2012 - 2016"
+       #caption = str_wrap("Trends in school readiness for all children (solid line) and children eligible for free school meals (dashed line) for 2012 - 2016. Graph shows median (lines) and interquartile range (grey area).",
+       #                    width = 90)
+       )
 
 ggsave(filename = "figure1.tiff",
        plot = fig1,
@@ -211,8 +212,11 @@ fig2_caption <- ggplot() +
 
 fig2 <- plot_grid(fig2_title,
                   fig2_body,
-                  fig2_caption,
-                  rel_heights = c(0.3, 1, 0.3),
+                  # fig2_caption,
+                  rel_heights = c(0.2, 
+                                  1
+                                  # 0.3,
+                                  ),
                   ncol = 1)
 
 ggsave(filename = "figure2.tiff",
@@ -351,9 +355,12 @@ fig3_caption <- ggplot() +
 
 fig3 <- plot_grid(fig3_title,
                   fig3_body,
-                  fig3_caption,
+                  # fig3_caption,
                   ncol = 1,
-                  rel_heights = c(0.35, 1, 0.5))
+                  rel_heights = c(0.2, 
+                                  1
+                                  #0.5,
+                                  ))
 
 ggsave(filename = "figure3.tiff",
        plot = fig3,
