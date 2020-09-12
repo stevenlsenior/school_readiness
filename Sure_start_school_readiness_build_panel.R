@@ -71,14 +71,16 @@ rm(outcomes, preds)
 ##### Download spending data from Gov.uk website ####
 
 # Urls for data tables for FYs 2012/13 - 2017/18 in a data frame
-yrs <- 2012:2017
+yrs <- 2012:2018
 urls <- c("https://www.gov.uk/government/uploads/system/uploads/attachment_data/file/264676/SR54-2013Tables.xls", # 2012/13
           "https://www.gov.uk/government/uploads/system/uploads/attachment_data/file/385992/SR52-2014Tables.xlsx", # 2013/14
           "https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/483692/SR48-Tables.xlsx", # 2014/15
           "https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/613286/SR63_2016_Tables.xlsx", # 2015/16
           "https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/669117/SR71_2017_Tables_Table12_revised.xlsx", # 2016/17
-          "https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/765909/LA_and_school_expenditure_2017-18_Tables.xlsx") # 2017/18
-extensions <- c(rep(".xls", 2), rep(".xlsx", 4))
+          "https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/765909/LA_and_school_expenditure_2017-18_Tables.xlsx", # 2017/18
+          "https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/856625/LA_and_school_expenditure_2018-19_Tables.xlsx") 
+
+extensions <- c(rep(".xls", 2), rep(".xlsx", 5))
 
 spend_urls <- data.frame(yrs, urls, extensions, stringsAsFactors = FALSE)
 
@@ -230,6 +232,28 @@ spend_1718 <- read_xlsx("la_spend_2017_18.xlsx",
   mutate_at(vars(-AreaCode, -Timeperiod),
             as.numeric)
 
+spend_1819 <- read_xlsx("la_spend_2018_19.xlsx", 
+                        sheet = 8, 
+                        skip = 4) %>%
+  select(tempcode = 2,
+         sure_start = 4,
+         lac = 5,
+         other_svcs = 6,
+         safeguard = 7,
+         fam_suppt = 8,
+         yp_svcs = 9,
+         yjs = 10,
+         cap_ex = 11,
+         spend_total = 12) %>%
+  filter(!is.na(tempcode),
+         tempcode != "LA Code",
+         !is.na(sure_start)) %>%
+  mutate(Timeperiod = 2018) %>%
+  merge(tempcode_lookup, by = "tempcode") %>%
+  select(-tempcode) %>%
+  mutate_at(vars(-AreaCode, -Timeperiod),
+            as.numeric)
+
 # Merge spending data across years into single data frame
 
 spend_1213 <- select(spend_1213, -tempcode)
@@ -239,10 +263,11 @@ spend <- rbind(spend_1213,
                spend_1415,
                spend_1516,
                spend_1617,
-               spend_1718) 
+               spend_1718,
+               spend_1819) 
 
 # Clear up workspace
-rm(spend_1213, spend_1314, spend_1415, spend_1516, spend_1617, spend_1718, spend_urls)
+rm(spend_1213, spend_1314, spend_1415, spend_1516, spend_1617, spend_1718, spend_1819, spend_urls)
 
 # Merge spending data with main dataset
 sr <- merge(sr, spend, by = c("AreaCode", "Timeperiod"),
